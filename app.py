@@ -48,7 +48,7 @@ if submit_button:
     }
     #adding initial inputs
     inputs = [
-        total_volume_2019, total_volume_2018,
+        total_volume_2019, 
         city_tier_dict.get(city_tier), product_volume_2019, gross_turnover_2019-tax
     ]
     inputs.append(1) if poc_image == 'Premium' else inputs.append(0) #adding premium
@@ -140,16 +140,29 @@ if submit_button:
         if(key==province):
             province_dict[key]=1
     inputs.extend(province_dict.values())
-
     inputs.append(total_volume_2019-total_volume_2018)
 
     data = np.array(inputs)
-    ser = pd.Series(data)   
-    with open('xgb_classifier_model.pickle','rb') as modelFile:
-        model = pickle.load(modelFile)
+    ser = pd.Series(data) 
 
-    prediction = model.predict(ser.to_frame().transpose())
-    
+    with open('hypertuned_rf_regressor_total_discount.pickle','rb') as modelFile:
+        tdr_model = pickle.load(modelFile)
+    with open('hypertuned_rf_regressor_on_invoice_discount.pickle','rb') as modelFile:
+        odr_model = pickle.load(modelFile)
+    # with open('hypertuned_xgb_classify_total_discount.pickle','rb') as modelFile:
+    #     tdc_model = pickle.load(modelFile)
+    # with open('hypertuned_xgb_classify_on_invoice_discount.pickle','rb') as modelFile:
+    #     odc_model = pickle.load(modelFile)
+
+    tdr_prediction = tdr_model.predict(ser.to_frame().transpose())
+    odr_prediction = odr_model.predict(ser.to_frame().transpose())
+    # tdc_prediction = tdc_model.predict(ser.to_frame().transpose())
+    # odc_prediction = odc_model.predict(ser.to_frame().transpose())
+
+    st.write(tdr_prediction)
+    st.write(odr_prediction)
+    # st.write(tdc_prediction)
+    # st.write(odc_prediction)
     # if(prediction):
     #     st.write("The POC with ID: ", poc_id ," will be getting a discount")
     # else:
