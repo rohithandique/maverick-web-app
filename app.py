@@ -8,10 +8,6 @@ columns = ('POC ID','Total Volume 2018','Total Volume 2019','City Tier','POC Ima
     'Segment','Sub Segment','Brand','Sub Brand','Returnability',
     'Pack Type','Gross Turnover 2019','Product Volume 2019',
     'Tax','Province',)
-df = pd.DataFrame(
-    columns = columns
-)
-df_display = st.table(df)
 with st.form(key='my_form'):
     poc_id = st.text_input(label='Enter POC ID',key="1")
     city_tier = st.selectbox('City Tier',[0,1,2],key="2")
@@ -147,16 +143,15 @@ if submit_button:
 
     inputs.append(total_volume_2019-total_volume_2018)
 
-    print(len(inputs))
     data = np.array(inputs)
     ser = pd.Series(data)   
-    with open('fitted_model.pickle','rb') as modelFile:
+    with open('xgb_classifier_model.pickle','rb') as modelFile:
         model = pickle.load(modelFile)
-        #Predict with the test set
-        prediction = model.predict(ser)
+
+    prediction = model.predict(ser.to_frame().transpose())
     
-    if(prediction):
-        st.write("The POC with ID: ", poc_id ," will be getting a discount")
-    else:
-        st.write("The POC with ID: ", poc_id ," will not be getting a discount")
+    # if(prediction):
+    #     st.write("The POC with ID: ", poc_id ," will be getting a discount")
+    # else:
+    #     st.write("The POC with ID: ", poc_id ," will not be getting a discount")
 
