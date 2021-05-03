@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import pickle
 st.title('My first app')
 st.write('### Hello World')
 columns = ('POC ID','Total Volume 2018','Total Volume 2019','City Tier','POC Image',
@@ -49,21 +50,113 @@ if submit_button:
         1:2,
         2:4
     }
-    def get_poc_image(x):
-        if(x=='Premium'):
-            return 1
-        return 0
-    
+    #adding initial inputs
     inputs = [
         total_volume_2019, total_volume_2018,
-        city_tier_dict.get(city_tier), product_volume_2019, gross_turnover_2019-tax,
-        get_poc_image(poc_image), 
+        city_tier_dict.get(city_tier), product_volume_2019, gross_turnover_2019-tax
     ]
-    print(inputs)
-    # data = np.array(inputs)
-    # ser = pd.Series(data)   
-    # st.write(ser.shape)
+    inputs.append(1) if poc_image == 'Premium' else inputs.append(0) #adding premium
+    #adding segments
+    segment_dict = {
+        'Entertainment Led': 0, 
+        'Food Led': 0,
+        'Institutional': 0, 
+        'Not applicable': 0,
+        'Wholesaler': 0
+    }
+    if(segment!='Drink Led'):
+        for key in segment_dict.keys():
+            if(key==segment):
+                segment_dict[key]=1
+    inputs.extend(segment_dict.values())
+    #adding pack types
+    pack_type_dict = {
+        'BULK': 0,
+        'CAN': 0,
+        'KEG': 0,
+        'PERFECTDRAFT': 0,
+    }
+    if(pack_type!='BOTTLE'):
+        for key in pack_type_dict.keys():
+            if(key==pack_type):
+                pack_type_dict[key]=1
+    inputs.extend(pack_type_dict.values())
 
+    inputs.append(1) if returnability == 'Returnable' else inputs.append(0) #adding returnable
+
+    sub_segment_dict = {
+        'Bar': 0,
+        'Hybrid': 0,
+        'Beer bar': 0,
+        'Restaurant': 0,
+        'Institutional': 0,
+        'Sports Venue': 0
+    }
+
+    for key in sub_segment_dict.keys():
+        if(key==sub_segment):
+            sub_segment_dict[key]=1
+    inputs.extend(sub_segment_dict.values())
+
+    brand_dict = {
+        'LEFFE': 0,
+        'JUPILER': 0,
+        'HOEGAARDEN': 0,
+        'TRIPEL KARMELIET': 0,
+        'BELLE VUE': 0,
+        'STELLA ARTOIS': 0,
+    }
+
+    for key in brand_dict.keys():
+        if(key==brand):
+            brand_dict[key]=1
+    inputs.extend(brand_dict.values())
+
+    sub_brand_dict = {
+        'JUPILER PILS': 0,
+        'LEFFE BLONDE': 0,
+        'HOEGAARDEN WHITE': 0,
+        'JUPILER 0,0': 0,
+        'LEFFE BRUNE': 0,
+        'TRIPEL KARMELIET': 0,
+        'STELLA ARTOIS REGULAR': 0,
+        'HOEGAARDEN ROSEE': 0,
+    }
+
+    for key in sub_brand_dict.keys():
+        if(key==sub_brand):
+            sub_brand_dict[key]=1
+    inputs.extend(sub_brand_dict.values())
+
+    province_dict = {
+        'West Flanders': 0,
+        'Brussels Capital Region': 0,
+        'Liège': 0,
+        'Flemish Brabant': 0,
+        'East Flanders': 0,
+        'Hainaut': 0,
+        'Antwerp': 0,
+        'Limburg': 0,
+        'Namur': 0
+    }
+
+    for key in province_dict.keys():
+        if(key==province):
+            province_dict[key]=1
+    inputs.extend(province_dict.values())
+
+    inputs.append(total_volume_2019-total_volume_2018)
+
+    print(len(inputs))
+    data = np.array(inputs)
+    ser = pd.Series(data)   
+    with open('fitted_model.pickle','rb') as modelFile:
+        model = pickle.load(modelFile)
+        #Predict with the test set
+        prediction = model.predict(ser)
     
-
+    if(prediction):
+        st.write("The POC with ID: ", poc_id ," will be getting a discount")
+    else:
+        st.write("The POC with ID: ", poc_id ," will not be getting a discount")
 
