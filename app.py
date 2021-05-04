@@ -48,8 +48,8 @@ if submit_button:
     }
     #adding initial inputs
     inputs = [
-        total_volume_2019, 
-        city_tier_dict.get(city_tier), product_volume_2019, gross_turnover_2019-tax
+        total_volume_2019, city_tier_dict.get(city_tier), 
+        product_volume_2019, gross_turnover_2019-tax
     ]
     inputs.append(1) if poc_image == 'Premium' else inputs.append(0) #adding premium
     #adding segments
@@ -142,29 +142,29 @@ if submit_button:
     inputs.extend(province_dict.values())
     inputs.append(total_volume_2019-total_volume_2018)
 
-    data = np.array(inputs)
-    ser = pd.Series(data) 
-
     with open('hypertuned_rf_regressor_total_discount.pickle','rb') as modelFile:
         tdr_model = pickle.load(modelFile)
     with open('hypertuned_rf_regressor_on_invoice_discount.pickle','rb') as modelFile:
         odr_model = pickle.load(modelFile)
-    # with open('hypertuned_xgb_classify_total_discount.pickle','rb') as modelFile:
-    #     tdc_model = pickle.load(modelFile)
-    # with open('hypertuned_xgb_classify_on_invoice_discount.pickle','rb') as modelFile:
-    #     odc_model = pickle.load(modelFile)
+    with open('hypertuned_xgb_classify_total_discount.pickle','rb') as modelFile:
+        tdc_model = pickle.load(modelFile)
+    with open('hypertuned_xgb_classify_on_invoice_discount.pickle','rb') as modelFile:
+        odc_model = pickle.load(modelFile)
 
-    tdr_prediction = tdr_model.predict(ser.to_frame().transpose())
-    odr_prediction = odr_model.predict(ser.to_frame().transpose())
-    # tdc_prediction = tdc_model.predict(ser.to_frame().transpose())
-    # odc_prediction = odc_model.predict(ser.to_frame().transpose())
+    cols_tdc = tdc_model.get_booster().feature_names
+    inputs_df = pd.DataFrame([inputs],columns=cols_tdc)
 
-    st.write(tdr_prediction)
-    st.write(odr_prediction)
-    # st.write(tdc_prediction)
-    # st.write(odc_prediction)
-    # if(prediction):
-    #     st.write("The POC with ID: ", poc_id ," will be getting a discount")
-    # else:
-    #     st.write("The POC with ID: ", poc_id ," will not be getting a discount")
+    tdr_prediction = tdr_model.predict(inputs_df)
+    odr_prediction = odr_model.predict(inputs_df)
+    tdc_prediction = tdc_model.predict(inputs_df)
+    odc_prediction = odc_model.predict(inputs_df)
+
+    if(tdc_prediction):
+        st.write("POC ID: ", poc_id," should be getting a total discount of: ", tdr_prediction)
+        st.write("They will also be getting an on-invoice discount of: ", odr_prediction)
+        st.write("And an off-invoice discount of", tdr_prediction-odr_prediction)
+    else:
+        st.write("POC ID: ", poc_id," should be getting no discount.")
+
+
 
