@@ -1,17 +1,24 @@
+#importing required modules
+#sklearn and xgboost has to be installed but not imported
 import streamlit as st
 import pandas as pd
 import numpy as np
 import pickle
-st.title('My first app')
-st.write('### Hello World')
-columns = ('POC ID','Total Volume 2018','Total Volume 2019','City Tier','POC Image',
-    'Segment','Sub Segment','Brand','Sub Brand','Returnability',
-    'Pack Type','Gross Turnover 2019','Product Volume 2019',
-    'Tax','Province',)
+
+#header texts
+st.markdown("<h1 style='text-align: center; color: #F1698B;'>AB InBev Maverick 2.0</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #F1698B;'>Team: Swift Snipers</h1>", unsafe_allow_html=True)
+
+st.header("Instructions:")
+st.write("1. Input all the data being asked.")
+st.write("2. Click on 'Get Discount'.")
+st.write("3. Wait a few seconds to get results.")
+#input area
 with st.form(key='my_form'):
     poc_id = st.text_input(label='Enter POC ID',key="1")
     city_tier = st.selectbox('City Tier',[0,1,2],key="2")
     
+    #dividing the rest of the inputs into 2 columns to save space
     left_col1, right_col1 = st.beta_columns(2)
     with left_col1:
         poc_image = st.radio("POC Image",('Mainstream', 'Premium'),key="5")
@@ -37,9 +44,9 @@ with st.form(key='my_form'):
     province = st.selectbox('Province',['Brussels Capital Region', 'Liège', 'Antwerp', 'Namur', 'Limburg', 'Hainaut', 'East Flanders', 'Flemish Brabant', 'West Flanders',
     'Luxembourg', 'Walloon Brabant'],key="14")
 
-    submit_button = st.form_submit_button(label='Submit')
+    submit_button = st.form_submit_button(label='Get Discount')
 
-# st.form_submit_button returns True upon form submit
+#st.form_submit_button returns True upon form submit
 if submit_button:
     city_tier_dict = {
         0:1,
@@ -52,6 +59,7 @@ if submit_button:
         product_volume_2019, gross_turnover_2019-tax
     ]
     inputs.append(1) if poc_image == 'Premium' else inputs.append(0) #adding premium
+    
     #adding segments
     segment_dict = {
         'Entertainment Led': 0, 
@@ -65,6 +73,7 @@ if submit_button:
             if(key==segment):
                 segment_dict[key]=1
     inputs.extend(segment_dict.values())
+    
     #adding pack types
     pack_type_dict = {
         'BULK': 0,
@@ -78,8 +87,10 @@ if submit_button:
                 pack_type_dict[key]=1
     inputs.extend(pack_type_dict.values())
 
+
     inputs.append(1) if returnability == 'Returnable' else inputs.append(0) #adding returnable
 
+    #adding sub segments
     sub_segment_dict = {
         'Bar': 0,
         'Hybrid': 0,
@@ -94,6 +105,7 @@ if submit_button:
             sub_segment_dict[key]=1
     inputs.extend(sub_segment_dict.values())
 
+    #adding brands
     brand_dict = {
         'LEFFE': 0,
         'JUPILER': 0,
@@ -108,6 +120,7 @@ if submit_button:
             brand_dict[key]=1
     inputs.extend(brand_dict.values())
 
+    #adding sub_brands
     sub_brand_dict = {
         'JUPILER PILS': 0,
         'LEFFE BLONDE': 0,
@@ -124,6 +137,7 @@ if submit_button:
             sub_brand_dict[key]=1
     inputs.extend(sub_brand_dict.values())
 
+    #adding provinces
     province_dict = {
         'West Flanders': 0,
         'Brussels Capital Region': 0,
@@ -140,31 +154,40 @@ if submit_button:
         if(key==province):
             province_dict[key]=1
     inputs.extend(province_dict.values())
-    inputs.append(total_volume_2019-total_volume_2018)
-
+    inputs.append(total_volume_2019-total_volume_2018) #adding YoY growth amount
+    
+    #loading the 4 models
     with open('hypertuned_rf_regressor_total_discount.pickle','rb') as modelFile:
-        tdr_model = pickle.load(modelFile)
+        tdr_model = pickle.load(modelFile) #total discount regression model
     with open('hypertuned_rf_regressor_on_invoice_discount.pickle','rb') as modelFile:
-        odr_model = pickle.load(modelFile)
+        odr_model = pickle.load(modelFile) #on invoice discount regression model
     with open('hypertuned_xgb_classify_total_discount.pickle','rb') as modelFile:
-        tdc_model = pickle.load(modelFile)
+        tdc_model = pickle.load(modelFile) #total discount classification model
     with open('hypertuned_xgb_classify_on_invoice_discount.pickle','rb') as modelFile:
-        odc_model = pickle.load(modelFile)
+        odc_model = pickle.load(modelFile) #on invoice discount classification model
 
-    cols_tdc = tdc_model.get_booster().feature_names
-    inputs_df = pd.DataFrame([inputs],columns=cols_tdc)
+    cols = tdc_model.get_booster().feature_names #getting column names
+    inputs_df = pd.DataFrame([inputs],columns=cols) #creating a dataframe of the inputs
 
+    #predicting the discounts using the models
     tdr_prediction = tdr_model.predict(inputs_df)
     odr_prediction = odr_model.predict(inputs_df)
     tdc_prediction = tdc_model.predict(inputs_df)
     odc_prediction = odc_model.predict(inputs_df)
 
+    #printing the output
+    st.title("Results:")
     if(tdc_prediction):
-        st.write("POC ID: ", poc_id," should be getting a total discount of: ", tdr_prediction)
-        st.write("They will also be getting an on-invoice discount of: ", odr_prediction)
-        st.write("And an off-invoice discount of", tdr_prediction-odr_prediction)
+        st.write("- POC ID: ", poc_id," should be getting a total discount of: ", round(tdr_prediction[0],2),".")
+        st.write("- They should be getting an on-invoice discount of: ", round(odr_prediction[0],2),".")
+        st.write("- And an off-invoice discount of", round(tdr_prediction[0]-odr_prediction[0],2),".")
+
+        st.subheader("Further Info")
+        st.write("- Total Discount Percentage is: ",round((tdr_prediction[0]/(gross_turnover_2019-tax))*100,2), "%")
+        if(total_volume_2018!=0):
+            st.write("- The YoY growth is: ",(((total_volume_2019-total_volume_2018)/(total_volume_2018))*100), "%")
     else:
-        st.write("POC ID: ", poc_id," should be getting no discount.")
+        st.write("- POC ID: ", poc_id," should be getting no discount.")
 
 
 
