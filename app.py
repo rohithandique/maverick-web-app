@@ -9,10 +9,12 @@ import pickle
 st.markdown("<h1 style='text-align: center; color: #F1698B;'>AB InBev Maverick 2.0</h1>", unsafe_allow_html=True)
 st.markdown("<h1 style='text-align: center; color: #F1698B;'>Team: Swift Snipers</h1>", unsafe_allow_html=True)
 
+#instructions
 st.header("Instructions:")
-st.write("1. Input all the data being asked.")
+st.write("1. Input all the data.")
 st.write("2. Click on 'Get Discount'.")
 st.write("3. Wait a few seconds to get results.")
+
 #input area
 with st.form(key='my_form'):
     poc_id = st.text_input(label='Enter POC ID',key="1")
@@ -157,13 +159,13 @@ if submit_button:
     inputs.append(total_volume_2019-total_volume_2018) #adding YoY growth amount
     
     #loading the 4 models
-    with open('hypertuned_rf_regressor_total_discount.pickle','rb') as modelFile:
+    with open('./pickle_files/hypertuned_rf_regressor_total_discount.pickle','rb') as modelFile:
         tdr_model = pickle.load(modelFile) #total discount regression model
-    with open('hypertuned_rf_regressor_on_invoice_discount.pickle','rb') as modelFile:
+    with open('./pickle_files/hypertuned_rf_regressor_on_invoice_discount.pickle','rb') as modelFile:
         odr_model = pickle.load(modelFile) #on invoice discount regression model
-    with open('hypertuned_xgb_classify_total_discount.pickle','rb') as modelFile:
+    with open('./pickle_files/hypertuned_xgb_classify_total_discount.pickle','rb') as modelFile:
         tdc_model = pickle.load(modelFile) #total discount classification model
-    with open('hypertuned_xgb_classify_on_invoice_discount.pickle','rb') as modelFile:
+    with open('./pickle_files/hypertuned_xgb_classify_on_invoice_discount.pickle','rb') as modelFile:
         odc_model = pickle.load(modelFile) #on invoice discount classification model
 
     cols = tdc_model.get_booster().feature_names #getting column names
@@ -176,8 +178,8 @@ if submit_button:
     odc_prediction = odc_model.predict(inputs_df)
 
     #printing the output
-    st.title("Results:")
-    if(tdc_prediction):
+    st.title("Results:") 
+    if(tdc_prediction): #total discount is non-zero
         st.write("- POC ID: ", poc_id," should be getting a total discount of: ", round(tdr_prediction[0],2),".")
         st.write("- They should be getting an on-invoice discount of: ", round(odr_prediction[0],2),".")
         st.write("- And an off-invoice discount of", round(tdr_prediction[0]-odr_prediction[0],2),".")
@@ -186,7 +188,7 @@ if submit_button:
         st.write("- Total Discount Percentage is: ",round((tdr_prediction[0]/(gross_turnover_2019-tax))*100,2), "%")
         if(total_volume_2018!=0):
             st.write("- The YoY growth is: ",(((total_volume_2019-total_volume_2018)/(total_volume_2018))*100), "%")
-    else:
+    else: #total discount is zero
         st.write("- POC ID: ", poc_id," should be getting no discount.")
 
 
