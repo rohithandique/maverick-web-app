@@ -187,7 +187,7 @@ if submit_button:
         st.subheader("Further Info")
         st.write("- Total Discount Percentage is: ",round((tdr_prediction[0]/(gross_turnover_2019-tax))*100,2), "%")
         if(total_volume_2018!=0):
-            st.write("- The YoY growth is: ",(((total_volume_2019-total_volume_2018)/(total_volume_2018))*100), "%")
+            st.write("- The YoY growth is: ",round(((total_volume_2019-total_volume_2018)/(total_volume_2018))*100,2), "%")
     else: #total discount is zero
         st.write("- POC ID: ", poc_id," should be getting no discount.")
 
